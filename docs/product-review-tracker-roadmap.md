@@ -31,6 +31,10 @@ In the first version, keep together:
 - event handlers
 - JSX
 
+## Git Checkpoint
+
+Use the Git checkpoint inside each lesson. Commit only after the lesson's app phase works.
+
 ## Refactor Later
 
 After the one-file version works, refactor gradually:

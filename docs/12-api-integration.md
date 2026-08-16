@@ -23,6 +23,23 @@ Optimistically update the UI first.
 
 Rollback if the request fails.
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "feat(api): add optimistic reviewed update"
+git push
+```
+
 ## UI Target
 
 Use the final app layout as the mutation target:

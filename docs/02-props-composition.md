@@ -22,6 +22,23 @@ Refactor the one-file static UI into small components:
 - `ProductStatusBadge`
 - `ReviewSummary`
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "refactor(products): split product card components"
+git push
+```
+
 ## UI Target
 
 Use the same visual target from lesson 01, but split the UI into components:

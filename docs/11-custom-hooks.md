@@ -23,9 +23,25 @@ Possible hook names:
 - `useProductReview`
 - `useSelectedProduct`
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "refactor(hooks): extract product review logic"
+git push
+```
+
 ## Stop When You Can Explain
 
 - Why custom hooks start with `use`.
 - What logic belongs in a hook.
 - What logic should stay inside a component.
-

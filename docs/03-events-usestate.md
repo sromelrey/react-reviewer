@@ -20,6 +20,23 @@ Add product selection.
 
 Clicking a product should update the selected product panel.
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "feat(products): add product selection"
+git push
+```
+
 ## UI Target
 
 ![Selection and selected product panel](../assets/04-selection-filters-derived-state.png)

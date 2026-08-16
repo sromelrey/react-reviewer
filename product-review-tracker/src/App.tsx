@@ -39,7 +39,7 @@ function App() {
   return (
     <main className='min-h-screen bg-slate-50 p-6 text-slate-950'>
       <section className='mx-auto max-w-6xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm'>
-        <h1 className='text-3xl font-bold tracking-normal'>
+        <h1 className='text-3xl font-bold tracking-normal bg-blue-600'>
           Product Review Tracker
         </h1>
         <p className='mt-2 text-lg text-slate-600'>Static product cards</p>

@@ -20,6 +20,23 @@ Move product state to the top-level app component.
 
 Pass products, selected product, and actions down through props.
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "refactor(state): lift product state to app component"
+git push
+```
+
 ## UI Target
 
 Keep the same screen while changing where state lives:

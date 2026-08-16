@@ -20,6 +20,23 @@ Create a Product Review provider.
 
 Expose state and actions through a custom hook.
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "feat(state): add product review context provider"
+git push
+```
+
 ## UI Target
 
 The UI should look the same. The internal state access changes:

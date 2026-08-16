@@ -34,6 +34,23 @@ Replace hard-coded products with API-loaded products.
 
 Add local `reviewStatus` after mapping the API product into the app product shape.
 
+## Git Checkpoint
+
+Before coding:
+
+```powershell
+git status
+```
+
+After coding:
+
+```powershell
+git status
+git add .
+git commit -m "feat(api): load products from dummyjson"
+git push
+```
+
 ## UI Target
 
 ![API loading, error, and success states](../assets/05-api-loading-error-success.png)
