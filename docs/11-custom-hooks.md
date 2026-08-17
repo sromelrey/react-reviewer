@@ -22,6 +22,18 @@ Stateful logic is code that reads or updates state, effects, context, reducers, 
 
 Hooks must be called at the top level of a React component or another hook. Do not call them inside conditions, loops, event handlers, or ordinary utility functions.
 
+React relies on hooks being called in the same order on every render so it can match each call to the correct state. The `use` prefix also lets the Hooks linter recognize that `useReviewNoteForm` must follow these rules.
+
+```ts
+// Wrong: this hook call happens only on some renders.
+if (productId) {
+  const [noteDraft, setNoteDraft] = useState("");
+}
+
+// Correct: call hooks unconditionally at the custom hook's top level.
+const [noteDraft, setNoteDraft] = useState(savedNote ?? "");
+```
+
 ### Big Word Alert: Separation Of Concerns
 
 Separation of concerns means giving each unit a focused responsibility. The custom hook manages review-note behavior; the component manages labels, fields, buttons, messages, and Tailwind classes.
@@ -31,6 +43,8 @@ Separation of concerns means giving each unit a focused responsibility. The cust
 Every call to a custom hook creates an independent hook instance. Two forms calling `useReviewNoteForm` share the behavior's design, but they do not automatically share the same draft state.
 
 Shared saved notes still live in the reducer and Context. The hook's draft and validation error remain local.
+
+Calling a custom hook does not create a global store. React associates the hook's state with the component that called it, just as if the `useState` calls were written directly in that component.
 
 ## What To Build
 
@@ -122,6 +136,23 @@ export function useReviewNoteForm({
 ```
 
 Returning `false` for invalid input and `true` for a successful save makes the result explicit, though the current component does not need the result yet.
+
+### What Moved And What Stayed
+
+The hook owns behavior that can be described without rendering anything:
+
+- the current draft and validation error
+- clearing an old error when typing resumes
+- trimming and validating the draft
+- dispatching the accepted note
+
+The component still owns browser and presentation concerns:
+
+- the `<form>` submit event and `preventDefault()`
+- labels, textarea, button, error markup, and saved-note markup
+- accessibility attributes and every Tailwind class
+
+The Product Review Tracker should therefore render exactly the same UI before and after this extraction. Refactoring changes where the behavior lives, not what the user sees.
 
 ## Refactor The Form Component
 
@@ -219,6 +250,8 @@ Keep the form invocation unchanged:
 />
 ```
 
+The existing `key` still matters after extraction. When the selected product changes, React replaces the form component and therefore replaces that component's `useReviewNoteForm` state too. Without the key, the custom hook would preserve the previous product's local draft just as the original component state did.
+
 ## Why Not Extract More Yet
 
 Do not combine fetching, filters, selection, form validation, and rendering into one large hook. Those responsibilities change for different reasons.
@@ -229,6 +262,20 @@ useReviewNoteForm -> manage one review-note draft and validation
 ReviewNoteForm -> render accessible form UI
 ProductList -> derive and render visible products
 ```
+
+### Why Saved Data Does Not Move Into The Custom Hook
+
+The note draft matters only to the currently rendered form, but a saved note must remain available after filtering, selecting another product, or rendering the product elsewhere. The reducer owns that shared application data, and Context makes it available to the component tree. `useReviewNoteForm` coordinates a local edit with that shared owner; it does not replace the owner.
+
+```text
+local noteDraft -> temporary text being edited by one form
+reducer reviewNote -> accepted product data used across the app
+Context -> access path to reducer state and dispatch
+```
+
+### Why Each Call Has Independent State
+
+If two components call `useReviewNoteForm`, React runs the same hook design for each component position but allocates separate `noteDraft` and `errorMessage` state. Sharing the hook function is like sharing a recipe, not sharing one result. Data is shared only when both calls deliberately read the same external owner, such as the Product Review Context.
 
 ## UI Target
 

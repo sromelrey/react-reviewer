@@ -29,11 +29,14 @@ export type ProductState = {
   selectedProductId: string | null;
   filter: ProductFilter;
   isLoading: boolean;
-  errorMessage: string | null;
+  error: string | null;
+  requestVersion: number;
 };
 ```
 
 Reuse the `ProductState`, `ProductAction`, `initialProductState`, and `productReducer` created in lesson 07. Context changes how components reach that state; it must not create a second copy.
+
+`error` and `requestVersion` deliberately keep their lesson 07 names. Context is a delivery refactor, so changing the reducer contract here would mix an unrelated data-model change into the lesson and would break Retry's Effect dependency.
 
 ## Big Words
 
@@ -48,6 +51,8 @@ A Provider is the component boundary that supplies a context value to everything
 ### Big Word Alert: Consumer
 
 A consumer is a component or hook that reads the nearest matching Provider value.
+
+"Nearest" matters when Providers are nested: React walks upward from the consumer and uses the first Provider for that context. In this app there is one `ProductReviewProvider` around `App`, so every tracker consumer shares the same reducer instance.
 
 ### Big Word Alert: Custom Provider Hook
 
@@ -161,7 +166,15 @@ export function useProductReview() {
 }
 ```
 
+`Dispatch<ProductAction>` means consumers may dispatch only actions from the lesson 07 union. `ReactNode` describes anything React can render between `<ProductReviewProvider>` and `</ProductReviewProvider>` as `children`.
+
+When reducer state changes, the Provider creates an updated `{ state, dispatch }` value and consumers that read this context render again. Context avoids manual forwarding; it does not make updates invisible or prevent rendering work.
+
 `undefined` distinguishes "there is no Provider" from valid state such as an empty products array or `selectedProductId: null`.
+
+Using a made-up default state would hide a missing Provider and let the screen run against data that is not connected to the real reducer. The `undefined` check fails immediately with a message that tells you exactly which boundary is missing.
+
+The custom hook also gives components one app-specific entry point. They do not need to import the context object or repeat the missing-Provider check.
 
 ## Wrap The App
 
@@ -181,7 +194,47 @@ createRoot(document.getElementById("root")!).render(
 );
 ```
 
+The Provider must be above every component that calls `useProductReview()`. Calling the hook inside `App` works because `main.tsx` renders `App` as the Provider's child; calling it in `main.tsx` before returning the Provider would not.
+
+## Preserve The API Effect
+
+Moving the reducer does not turn Context into a data-fetching system. Keep the lesson 07 Effect at the top of `App`, read `state.requestVersion` and `dispatch` through the hook, and leave the request, cleanup, mapping, and actions unchanged:
+
+```tsx
+function App() {
+  const { state, dispatch } = useProductReview();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      dispatch({ type: "productsLoadStarted" });
+      // Keep the lesson 07 fetch, mapping, and success/failure dispatches here.
+    }
+
+    void loadProducts();
+    return () => controller.abort();
+  }, [state.requestVersion, dispatch]);
+
+  // Render the existing shell and request states.
+}
+```
+
+React guarantees that a reducer's `dispatch` function has a stable identity, so including it in the dependency array does not cause repeated requests. The value that intentionally reruns this Effect is still `state.requestVersion`.
+
 ## Read Shared State In Real Components
+
+Remove props only where Context now supplies the same shared feature value:
+
+```text
+ReviewSummary: remove reviewedCount and totalCount props; read products
+FilterTabs: remove filter and onFilterChange props; read filter and dispatch
+SelectedProductPanel: read selected product and dispatch productReviewed
+ProductWorkspace: stop forwarding those shared values and actions
+ProductList/ProductRow: keep explicit product, selection, and event presentation props
+```
+
+Make one component work at a time before deleting its old props. This keeps TypeScript errors local and lets you verify that the visible tracker remains unchanged after each move.
 
 `ReviewSummary` no longer needs the products array passed through `App`:
 
@@ -244,6 +297,10 @@ export function FilterTabs() {
   );
 }
 ```
+
+`ReviewSummary` and `FilterTabs` consume shared feature state directly because intermediate components previously forwarded those values. `ProductRow` can still receive `product`, `isSelected`, and `onSelect` as props because those explicit presentation inputs make the row reusable and easy to inspect.
+
+Context does not replace the reducer: Context delivers `{ state, dispatch }`, while the reducer still defines what every action means and calculates the next state. It also does not mean all state should become shared. A temporary text input used by only one form should remain local with `useState` until another component genuinely needs it.
 
 ## Preserve The App Shell
 

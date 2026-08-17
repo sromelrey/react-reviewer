@@ -1,9 +1,9 @@
-import type { Product } from "../src/App";
 import ProductRow from "./ProductRow";
+import type { Product } from "../src/types/product";
 
 type ProductListProps = {
   products: Product[];
-  selectedProductId: string;
+  selectedProductId: string | null;
   onSelect: (productId: string) => void;
 };
 

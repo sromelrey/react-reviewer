@@ -16,17 +16,41 @@ An event handler is a function React runs after a user action, such as clicking 
 
 In JSX, `onClick` should receive a function.
 
+React needs a function it can call later, after the click. Calling the handler while
+rendering gives `onClick` the function's return value instead.
+
+```tsx
+// Wrong: runs during render.
+onClick={onSelect(product.id)}
+
+// Correct: gives React a function to run after the click.
+onClick={() => onSelect(product.id)}
+```
+
 ### Big Word Alert: Closure
 
 A closure is when a function remembers values from the scope where it was created.
 
 In this lesson, each product click handler remembers which product was clicked.
 
+For each rendered card, `() => onSelect(product.id)` closes over that card's
+`product`. When React runs the function later, it can still read the correct ID. The
+closure remembers the variable from that render; it does not remember the argument
+because `onSelect` has not been called yet.
+
 ### Big Word Alert: useState
 
 `useState` stores local component state.
 
 Use it when one component needs to remember something that changes over time.
+
+`useState` returns the current value and a setter. Calling the setter asks React to
+render the component again with the new value; changing an ordinary variable would
+not persist between renders or trigger the UI update.
+
+Local state is enough while `App` and its descendants are the only components that
+need the selection. Context becomes useful later when distant branches need shared
+data and passing props through intermediate components becomes noisy.
 
 ### Big Word Alert: Details Component
 
@@ -41,6 +65,17 @@ When state changes, React calls the component again.
 The component returns new JSX based on the new state.
 
 That is how clicking a product changes the selected product panel.
+
+Store the smallest durable fact: the selected product's ID. The product object is
+already in `products`, so `products.find(...)` can derive the corresponding object on
+every render. Storing both the ID and object would create two sources of truth that
+could disagree.
+
+`App` performs that lookup because it owns both the products and selected ID.
+`SelectedProductPanel` receives only the resulting product because rendering one
+product is its entire job. Similarly, `App` calculates `isSelected` because comparing
+the current ID is selection logic; `ProductCard` only needs the resulting boolean to
+choose its style.
 
 ## App Step
 
@@ -207,14 +242,21 @@ function App() {
 
         <div className="mt-6 grid gap-4 md:grid-cols-[1fr_360px]">
           <div className="space-y-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isSelected={product.id === selectedProductId}
-                onSelect={handleSelectProduct}
-              />
-            ))}
+            <ProductCard
+              product={products[0]}
+              isSelected={products[0].id === selectedProductId}
+              onSelect={handleSelectProduct}
+            />
+            <ProductCard
+              product={products[1]}
+              isSelected={products[1].id === selectedProductId}
+              onSelect={handleSelectProduct}
+            />
+            <ProductCard
+              product={products[2]}
+              isSelected={products[2].id === selectedProductId}
+              onSelect={handleSelectProduct}
+            />
           </div>
 
           <SelectedProductPanel product={selectedProduct} />
@@ -226,6 +268,9 @@ function App() {
 ```
 
 The layout changes because the new details panel needs its own column. On smaller screens, the grid becomes one column and the details panel appears below the product cards.
+
+The repeated calls are intentional at this checkpoint. Lesson 04 introduces list
+rendering with `.map` and explains why every rendered item then needs a `key`.
 
 ## Suggested Component Shapes
 

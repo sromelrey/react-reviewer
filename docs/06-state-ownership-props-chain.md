@@ -77,6 +77,14 @@ selectedProduct
 reviewedCount
 ```
 
+They are calculated from the current source state during rendering. Storing them separately would create two values that can disagree, such as a `selectedProductId` that changes while a copied `selectedProduct` object remains stale.
+
+### Why App Owns This State
+
+Choose the closest common parent of every reader and updater. In this tracker, the summary reads products, the filters read and change the filter, the list reads products and selection, and the details panel reads the selected product. `App` is their closest common parent, so one App-owned state keeps all sibling views synchronized.
+
+Local UI state that only one child needs should stay in that child. Moving every value to `App` would make ownership less precise, not more reusable.
+
 ## What To Build
 
 Extract a `ProductWorkspace` component between `App` and the UI components. This produces a real props chain that Context API will simplify in lesson 08.
@@ -131,6 +139,8 @@ function handleRetry() {
 
 Names such as `handleSelectProduct` explain the event. A generic name such as `handleClick` hides the intent.
 
+Passing a named handler also protects the ownership boundary: children report what happened, while `App` decides whether that event changes state, dispatches an action, logs activity, or does several of those jobs later. Passing a raw setter exposes the storage mechanism instead of the feature's intent.
+
 ## Build ProductWorkspace
 
 ```tsx
@@ -170,6 +180,24 @@ function ProductWorkspace({
 ```
 
 Notice that `ProductWorkspace` does not select a product or change a filter itself. It lays out the feature and forwards events to the owner.
+
+Trace a row click through the chain:
+
+```text
+App passes selectedProductId down
+ProductRow calls onSelect(product.id)
+ProductList and ProductWorkspace forward that event upward
+App's handleSelectProduct updates the owned state
+React renders descendants again with the new selectedProductId
+```
+
+Data such as `visibleProducts`, `filter`, and `selectedProductId` flows down. Event callbacks such as `onSelectProduct` and `onFilterChange` carry user intent up. The child does not directly edit the parent's state.
+
+### Where Forwarding Becomes Prop Drilling
+
+`ProductWorkspace` genuinely uses `visibleProducts` to configure the list and `selectedProduct` to configure the panel. However, it mostly forwards `selectedProductId`, `filter`, `onFilterChange`, `onSelectProduct`, and later `onMarkReviewed` to deeper components. Those repeatedly forwarded feature values create the prop-drilling pressure that Context will address in lesson 08.
+
+Passing a prop through one or two levels is not automatically a problem. Keep explicit presentation props when they make a reusable component easier to understand; use Context for widely shared feature state and actions.
 
 Update the nullable selection prop introduced by API loading:
 

@@ -18,11 +18,20 @@ By the end of this lesson, the tracker should render products with `.map`, filte
 products.map((product) => <ProductRow key={product.id} product={product} />)
 ```
 
+The callback returns one JSX element for each product, so `.map` returns a new array
+of JSX elements. It does not mutate `products`. React can render that returned array
+as a list.
+
 ### Big Word Alert: key
 
 `key` is React's identity hint for an item in a rendered list. React uses it during reconciliation to match an old item with the corresponding new item.
 
 Use a stable ID from the data. Do not use the array index when items can be filtered, reordered, inserted, or removed.
+
+An index describes a position, not the product at that position. After filtering or
+reordering, index `0` may refer to a different product, so React can preserve local
+DOM or component state against the wrong row. `product.id` continues to identify the
+same product wherever it moves.
 
 ### Big Word Alert: Reconciliation
 
@@ -37,6 +46,21 @@ Derived state is a value calculated from current state or props. `visibleProduct
 ### Conceptual Aside: Keep One Source Of Truth
 
 If a value can be calculated from current data, usually calculate it during render instead of storing another state variable. Keeping both `products` and a separate `reviewedCount` in state creates two values that can disagree.
+
+State is for information the app must remember after an interaction. Derived values
+are answers computed from that remembered state and existing data. Here, the app
+remembers `filter` and `selectedProductId`; it recalculates the visible rows, reviewed
+count, and selected product.
+
+### Conceptual Aside: Filtering Changes Visibility, Not Selection
+
+The filter decides which rows are visible. Selection answers a separate question:
+which product is active in the details panel. Hiding the selected row does not delete
+the product or mean the user selected something else, so do not clear
+`selectedProductId` when `filter` changes.
+
+The reviewed summary also describes the full collection. Calculate it from
+`products`, while `visibleProducts` is used only for the filtered list.
 
 ## Starting Point
 
@@ -162,6 +186,9 @@ function FilterTabs({ filter, onFilterChange }: FilterTabsProps) {
 ```
 
 `aria-pressed` communicates which toggle button is active to assistive technology. The closure in `onClick` remembers the current `filterOption`.
+
+Each filter button also uses `filterOption` as its key. Those three string values are
+stable identities, just like product IDs are stable identities for product rows.
 
 ## Build ProductList And ProductRow
 

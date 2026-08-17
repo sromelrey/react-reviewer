@@ -69,6 +69,26 @@ MSW means Mock Service Worker. It intercepts requests at the network boundary, w
 
 An assertion states what must be true after an action, such as expecting the reviewed summary to change from `0 of 3` to `1 of 3`.
 
+### Big Word Alert: jsdom
+
+jsdom is a browser-like document environment that runs inside the test process. It gives React a DOM to render into, but it is not a full browser and does not make real network requests unless the test allows them.
+
+### Big Word Alert: Async Query
+
+An async query such as `findByText` repeatedly looks for an element until it appears or the query times out. Use it when an Effect, request, or state transition causes the element to appear later.
+
+### Conceptual Aside: `getBy`, `findBy`, And `waitFor`
+
+Use `getBy...` when the element must already exist; it fails immediately when absent. Use `findBy...` when one element will appear asynchronously. Use `waitFor` when an assertion about an existing element, mock, or changing value may need to be retried.
+
+```tsx
+screen.getByRole("button", { name: "Mark reviewed" }); // available now
+await screen.findByRole("alert"); // appears after the request fails
+await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+```
+
+Do not put clicks or other side effects inside `waitFor`; its callback can run more than once.
+
 ### Conceptual Aside: Test Outcomes, Not Wiring
 
 The user does not call the reducer or inspect context values. The user selects a product, clicks a button, and reads the result, so the test should follow that path too.
@@ -121,6 +141,8 @@ Add a script to `package.json`:
 ```
 
 `@testing-library/jest-dom` works with Vitest. Its name describes the matcher package's origin; it does not require the Jest test runner.
+
+Vitest is the test runner: it discovers tests, provides `test`, `expect`, and mocks, then reports results. React Testing Library renders and queries the UI, while jest-dom adds readable DOM assertions such as `toBeInTheDocument()`.
 
 ## Step 2: Configure Vitest
 
@@ -270,6 +292,10 @@ afterEach(() => {
 
 If your provider is already rendered inside `App`, render `<App />` only. Use one provider, not two.
 
+The mock keeps the same boundary as production code. GET returns DummyJSON-shaped fields such as `title` and numeric `id`; the Lesson 05 service maps them into `name` and string `id` before components receive them. PUT is routed separately through `init.method`, allowing the test to choose success or failure without contacting DummyJSON.
+
+`userEvent.setup()` creates the interaction controller for one test. `await user.click(...)` waits for the complete simulated interaction and the React updates it directly triggers; it does not automatically wait for a later network response, which is why the test still uses `findBy...` for async results.
+
 ## Step 5: Test Selection And Successful Review
 
 Continue in `src/test/App.test.tsx`:
@@ -312,6 +338,8 @@ describe("Product Review Tracker", () => {
 
 This proves the public path: API load, product selection, user click, optimistic reducer update, request, and visible confirmation.
 
+The first `findByText` waits for the GET request and initial render. The named `View details` query proves a user can select the intended product without reaching into context. After the click, the reviewed count proves state changed, the saved message proves the request completed successfully, and the fetch assertion proves the correct product endpoint used `PUT`.
+
 ## Step 6: Test Rollback
 
 Add the failure test below the success test:
@@ -349,6 +377,8 @@ Add the failure test below the success test:
 ```
 
 The count returning to `0 of 3` is the visible proof that rollback restored the product's previous status.
+
+The alert proves failure feedback is available to the user; it does not by itself prove state was restored. The reviewed count supplies that second proof, while the enabled `Retry` button proves the user is not trapped after failure. `waitFor` retries only the count assertion until React finishes the rollback render.
 
 ## UI Target
 
@@ -407,6 +437,8 @@ git push
 - Calling `dispatch` or `productReducer` directly in this behavior test.
 - Using class names as selectors.
 - Forgetting to `await` user events and async UI updates.
+- Using `getBy...` for content that appears only after an API request.
+- Performing a click inside `waitFor`, which may repeat the interaction.
 
 ## Stop When You Can Explain
 
@@ -415,3 +447,5 @@ git push
 - What the successful test proves beyond “the button was clicked.”
 - Why the failure test checks both the alert and restored reviewed count.
 - When a growing suite would benefit from MSW instead of a local `fetch` mock.
+
+Check your explanation against the lesson: the test follows visible controls because selection behavior is part of the product. The GET mock preserves the real API boundary, and the success assertions cover loading, selection, optimistic state, the PUT request, and confirmation. Failure needs both feedback and restored state. A local fetch mock is compact for these two routes; MSW becomes useful when many tests need shared handlers, realistic request matching, and reusable success or error scenarios.

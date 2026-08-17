@@ -136,6 +136,23 @@ const initialProductState: ProductState = {
 
 `visibleProducts`, `selectedProduct`, and `reviewedCount` are still derived. They do not belong in `ProductState`.
 
+Each reducer term has one job in the tracker:
+
+```text
+state    = the current product-review snapshot
+action   = a typed description of what happened
+dispatch = the function that sends an action
+reducer  = the pure function that calculates the next snapshot
+```
+
+The action union prevents mismatched payloads. After TypeScript sees a specific `action.type`, it narrows `action` to that union member:
+
+```ts
+case "productSelected":
+  // Here action.productId exists, but action.products and action.message do not.
+  return { ...state, selectedProductId: action.productId };
+```
+
 ## Build The Complete Reducer
 
 ```ts
@@ -204,6 +221,26 @@ function productReducer(
 
 The map in `productReviewed` creates a new array and a new object only for the matching product. It does not mutate `state.products`.
 
+```ts
+// Wrong: changes an object that belongs to the previous state.
+state.products[0].reviewStatus = "reviewed";
+return state;
+
+// Correct: returns a new state, array, and changed product object.
+return {
+  ...state,
+  products: state.products.map((product) =>
+    product.id === action.productId
+      ? { ...product, reviewStatus: "reviewed" }
+      : product,
+  ),
+};
+```
+
+React uses object identity to recognize changed state. Returning the same mutated objects can hide a change from React and also corrupt the previous state snapshot, which makes behavior and tests harder to reason about.
+
+The `{ ...state, changedField: value }` pattern copies every unchanged field into the next state before replacing the named field. Returning only `{ products: action.products }` would drop selection, filter, loading, error, and request version from the complete state object.
+
 ## Use The Reducer In App
 
 ```tsx
@@ -224,6 +261,8 @@ const reviewedCount = state.products.filter(
   (product) => product.reviewStatus === "reviewed",
 ).length;
 ```
+
+These values are derived because the reducer already stores everything needed to calculate them. Duplicating `reviewedCount` in state would require every product-changing action to update both products and the count perfectly.
 
 Create event handlers that translate UI events into actions:
 
@@ -299,6 +338,17 @@ useEffect(() => {
 ```
 
 The Effect performs the side effect. Its actions report what happened; the reducer decides the next state.
+
+Calling `fetch` inside the reducer would make the same state and action produce different results depending on the network. It could also start another request whenever React evaluates the reducer. Keeping the request in the Effect lets the reducer remain synchronous and deterministic.
+
+The request actions describe a small state machine:
+
+```text
+productsLoadStarted -> loading, no previous error
+productsLoaded -> products available, loading finished
+productsLoadFailed -> readable error, loading finished
+productsReloadRequested -> loading and a new requestVersion
+```
 
 ## Connect Reducer State To The Existing UI
 
@@ -406,6 +456,8 @@ Then pass the App handler into the workspace:
 ```
 
 This is one more prop in the chain and another clear reason to learn Context next.
+
+`useReducer` is useful here because selection, filters, API status, Retry, and review changes are related transitions over one state shape. For a single independent boolean or input, `useState` would remain simpler; a reducer earns its place when named events make several coordinated updates easier to follow.
 
 Keep the existing Tailwind classes for the header, summary, filters, rows, request states, images, and two-column layout. The only new styling is the review button and completed message shown above.
 

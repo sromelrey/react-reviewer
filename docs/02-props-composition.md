@@ -18,6 +18,26 @@ Props are values passed from a parent component to a child component.
 
 Props are read-only from the child component's point of view.
 
+React uses one-way data flow: the parent owns a value and passes it down. A child
+must not mutate that value because the parent would no longer be the reliable source
+of truth. To request a change later, a child receives and calls a callback prop.
+
+Props are always received as one object. Type that object, even when the component
+needs only one value:
+
+```tsx
+type ProductStatusBadgeProps = {
+  reviewStatus: Product["reviewStatus"];
+};
+
+function ProductStatusBadge({ reviewStatus }: ProductStatusBadgeProps) {
+  return <span>{reviewStatus}</span>;
+}
+```
+
+`Product["reviewStatus"]` extracts the property's value type (`"new" |
+"reviewed"`). It is not a props object by itself.
+
 ### Big Word Alert: Component Composition
 
 Component composition means building a UI by combining smaller components.
@@ -29,6 +49,23 @@ Instead of one large `App` function, you create smaller pieces that each have a 
 `children` is a special prop for nested JSX.
 
 Use it when a component should wrap content that is passed between its opening and closing tags.
+
+```tsx
+type SectionProps = {
+  children: React.ReactNode;
+};
+
+function Section({ children }: SectionProps) {
+  return <section className="rounded-lg border p-4">{children}</section>;
+}
+
+// The heading becomes this Section instance's children.
+<Section><h2>Products</h2></Section>
+```
+
+The Product Review Tracker does not need this wrapper yet because its components
+have specific jobs and named props. Use `children` when the caller should choose the
+nested content, not merely because a component has JSX inside it.
 
 ### Big Word Alert: Summary Component
 
@@ -45,6 +82,21 @@ Now we refactor because repeated UI becomes easier to understand when each piece
 Refactoring should not change behavior. It changes structure.
 
 In this lesson, the cards should keep the same data and styling from lesson 01. The only new visible UI is the small header summary badge, because `ReviewSummary` needs something real to render.
+
+Create a component when a UI piece repeats, has a clear responsibility, or would be
+easier to understand and test with a name. `ProductStatusBadge` owns status styling,
+`ProductCard` owns one card, and `ReviewSummary` owns the page-level count.
+
+### Conceptual Aside: Data Ownership And Narrow Props
+
+`App` owns the product collection, so it passes that collection to
+`ReviewSummary`. Reading a module variable directly would hide the dependency and
+make the component harder to reuse with different products.
+
+Pass each child only what its job requires. `ProductStatusBadge` needs one status,
+not the full product. `ReviewSummary` needs the collection to calculate a page-level
+overview, and it belongs beside the page title because it summarizes the whole page,
+not one card.
 
 ## What To Build
 
@@ -224,11 +276,14 @@ Then `App` should use the extracted components with `ReviewSummary` in the heade
 </header>
 
 <div className="mt-6 grid gap-4 md:grid-cols-3">
-  {products.map((product) => (
-    <ProductCard key={product.id} product={product} />
-  ))}
+  <ProductCard product={products[0]} />
+  <ProductCard product={products[1]} />
+  <ProductCard product={products[2]} />
 </div>
 ```
+
+The cards remain explicit for now so this lesson stays focused on props and
+composition. Lesson 04 replaces these repeated calls with `.map` and explains keys.
 
 ## Common Mistakes
 

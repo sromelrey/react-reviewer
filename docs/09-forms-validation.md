@@ -48,6 +48,8 @@ The source of truth is the authoritative location for a value. `noteDraft` owns 
 
 Typing should not modify the product on every keystroke. A local draft lets the user edit and validate freely; dispatching `reviewNoteChanged` deliberately copies accepted text into shared product state.
 
+In the Product Review Tracker, `noteDraft` can be incomplete while the user types. The reducer should receive only the trimmed note that passed validation, because that is the version the rest of the app treats as saved.
+
 ## What To Build
 
 ```text
@@ -118,6 +120,26 @@ case "reviewNoteChanged":
 ```
 
 This preserves every unedited product object and creates a new object only for the matching product.
+
+### Why `.map` Is Used
+
+The reducer must return a new products array so React can observe that state changed. `.map` returns a new array, reuses every unedited product object, and creates a new object only for the product whose note changed.
+
+```ts
+// Wrong: mutates an object already stored in state.
+product.reviewNote = action.reviewNote;
+return state;
+
+// Correct: returns a new array and a new matching product object.
+return {
+  ...state,
+  products: state.products.map((product) =>
+    product.id === action.productId
+      ? { ...product, reviewNote: action.reviewNote }
+      : product,
+  ),
+};
+```
 
 ## Build The Controlled Form
 
@@ -216,6 +238,36 @@ export function ReviewNoteForm({
 }
 ```
 
+### Why The Textarea Is Controlled
+
+`value={noteDraft}` makes React state determine what the textarea displays. `onChange` copies each browser edit back into that state. Without `onChange`, a textarea with a `value` prop appears read-only because the browser cannot permanently change React's value.
+
+```tsx
+<textarea
+  value={noteDraft}
+  onChange={(event) => setNoteDraft(event.target.value)}
+/>
+```
+
+This single source of truth lets the form trim, validate, reset, and save the exact draft currently shown to the user.
+
+### Why The Form Handles `onSubmit`
+
+A form can be submitted by its button, by pressing Enter where supported, or by assistive technology. Handling `onSubmit` covers the form behavior once; handling only `onClick` covers only one button interaction.
+
+The browser normally reloads or navigates when a form submits. `event.preventDefault()` stops that default navigation so React can validate the draft and dispatch the reducer action without losing app state.
+
+`noValidate` disables the browser's built-in validation UI for this lesson. That allows the Product Review Tracker to display its own accessible `errorMessage`; it does not mean validation is skipped.
+
+### Why The Error Attributes Matter
+
+- `aria-invalid` tells assistive technology that the textarea currently has an error.
+- `aria-describedby` connects the textarea to the matching error paragraph.
+- `role="alert"` announces a newly rendered validation message.
+- `htmlFor` and `id` connect the visible label to the textarea.
+
+Including `productId` in the IDs keeps them unique when the selected product changes.
+
 ## Reset Local State When Selection Changes
 
 `useState(savedNote)` does not reset merely because a different product prop arrives. Give the form a product-based `key` so React creates fresh local draft state:
@@ -229,6 +281,25 @@ export function ReviewNoteForm({
 ```
 
 The `key` controls form identity so a keyboard draft does not appear when the mouse is selected.
+
+### Conceptual Aside: State Belongs To A Position And Identity
+
+React preserves component state while it sees the same component in the same position. A changed `savedNote` prop does not rerun the `useState` initializer. Changing the form's `key` tells React that this is a different form identity, so the old local draft is discarded and the new product's draft is initialized.
+
+```tsx
+// Wrong for this app: the same form identity can retain the previous draft.
+<ReviewNoteForm
+  productId={selectedProduct.id}
+  savedNote={selectedProduct.reviewNote}
+/>
+
+// Correct: each selected product receives its own fresh form identity.
+<ReviewNoteForm
+  key={selectedProduct.id}
+  productId={selectedProduct.id}
+  savedNote={selectedProduct.reviewNote}
+/>
+```
 
 ## Update The Selected Product Panel
 

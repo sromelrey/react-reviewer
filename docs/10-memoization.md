@@ -40,6 +40,10 @@ Normalization means converting values into a consistent form before comparing th
 
 Memoization is an optimization, not a correctness requirement. The UI must work before and after these changes.
 
+### Conceptual Aside: Render, Calculation, And Event Are Different Work
+
+Rendering calls a component to produce its next JSX. During that render, `useMemo` may reuse an earlier calculation and `memo` may let React skip a child render. `useCallback` only reuses a function reference; the function still runs normally when the user clicks its button.
+
 ## What To Build
 
 ```text
@@ -245,6 +249,52 @@ export const ProductRow = memo(ProductRowComponent);
 
 The inline arrow functions create small functions inside each row. That is fine: they stay inside the memoized component. The parent callbacks passed as props remain stable.
 
+### Why Stable Props Matter
+
+By default, `memo` shallowly compares each new prop with its previous value. Primitive values compare by value, while objects, arrays, and functions compare by reference.
+
+```tsx
+// New function reference on every parent render, so memo sees a changed prop.
+<ProductRow onSelect={(productId) => dispatch({ type: "selected", productId })} />
+
+// Stable reference until a dependency changes.
+const handleSelectProduct = useCallback(
+  (productId: string) => dispatch({ type: "selected", productId }),
+  [dispatch],
+);
+
+<ProductRow onSelect={handleSelectProduct} />
+```
+
+The inline `() => onSelect(product.id)` inside `ProductRow` does not defeat this boundary. It is created only when that row renders and is not passed from the parent as a prop used by `memo`'s comparison.
+
+### How Dependency Arrays Work
+
+A dependency array lists every reactive value read by the memoized calculation or callback. React reuses the cached value or function while those dependencies are unchanged and recreates it when one changes.
+
+- `visibleProducts` reads `products`, `filter`, and `searchQuery`, so it depends on all three.
+- The callbacks read `dispatch`, so they list `dispatch`. A reducer's dispatch function has a stable reference, but including it makes the dependency relationship explicit and satisfies the Hooks linter.
+
+Leaving out a dependency can produce a **stale closure**: the cached function or calculation continues using a value captured by an older render.
+
+```tsx
+// Wrong: changing searchQuery would not recalculate the result.
+const visibleProducts = useMemo(
+  () => products.filter((product) => product.name.includes(searchQuery)),
+  [products],
+);
+
+// Correct: every reactive value read by the calculation is listed.
+const visibleProducts = useMemo(
+  () => products.filter((product) => product.name.includes(searchQuery)),
+  [products, searchQuery],
+);
+```
+
+### Big Word Alert: Stale Closure
+
+A stale closure is a function that remembers values from an older render when the latest values were expected. Correct dependency arrays let React recreate cached work with current values.
+
 ## Why Each Tool Is Here
 
 | Tool | Protects | Dependency or comparison |
@@ -254,6 +304,31 @@ The inline arrow functions create small functions inside each row. That is fine:
 | `memo` | `ProductRow` render | Render when `product`, `isSelected`, or a callback changes |
 
 When a product is updated immutably, only that product receives a new object reference. Unchanged rows keep their old product references and can benefit from `memo`.
+
+### Why Search Results Are Derived
+
+`visibleProducts` can always be calculated from `products`, `filter`, and `searchQuery`, so storing another products array in state would duplicate the same information. Duplicate state can become inconsistent when products, the active filter, or the query changes.
+
+```tsx
+// Avoid: now code must manually keep two product arrays synchronized.
+const [visibleProducts, setVisibleProducts] = useState(products);
+
+// Prefer: calculate the current view from its sources.
+const visibleProducts = useMemo(
+  () => products.filter(/* status and search checks */),
+  [products, filter, searchQuery],
+);
+```
+
+### When Memoization Is Not Worth It
+
+Remove memoization when the calculation is cheap, the component is small, or its props change on almost every render. In those cases, dependency arrays and reference management add complexity without skipping meaningful work. For this lesson, the product rows provide one deliberate boundary for learning and measuring the tools; do not memoize every component automatically.
+
+`useMemo`, `useCallback`, and `memo` must never be required for correctness. First make the Product Review Tracker work, observe unnecessary row renders, and then keep the optimization only when it improves a measured or credible rendering cost.
+
+### Why `useMemo` Must Not Perform Side Effects
+
+React may run calculations during rendering more than once and memoization is only a performance optimization. Fetching, dispatching, changing the DOM, or writing storage inside `useMemo` makes rendering impure and can repeat behavior unexpectedly. `useMemo` should only calculate and return a value such as `visibleProducts`; event handlers or Effects own side effects.
 
 ## UI Target
 

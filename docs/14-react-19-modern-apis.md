@@ -46,7 +46,7 @@ An Action is a function used in a transition to perform work and update UI aroun
 
 ### Big Word Alert: `useActionState`
 
-`useActionState` runs an Action and stores the value returned by its latest execution. It is useful for result data such as a validation or server error.
+`useActionState` returns the latest Action result, a function to submit the Action, and a pending flag. It stores result data such as a validation or server error; it does not replace the provider's products or automatically persist anything to an API.
 
 ### Big Word Alert: `useFormStatus`
 
@@ -66,7 +66,7 @@ A transition marks an update as work React can coordinate without blocking urgen
 
 ### Big Word Alert: Progressive Enhancement
 
-Progressive enhancement means a form retains useful submission behavior even before or without all client JavaScript behavior. Action-based forms are designed around the browser's form model.
+Progressive enhancement means starting with browser form behavior and adding richer JavaScript behavior. React Actions use the form model, but this lesson's client-defined Action still requires JavaScript; no-JavaScript submission requires a server function and framework support.
 
 ### Conceptual Aside: Modern APIs Compress A Flow You Already Know
 
@@ -83,6 +83,15 @@ Lesson 12 manually tracked pending state, optimistic state, errors, and rollback
 | rollback action restores old status | optimistic value reverts when Action fails |
 
 The real confirmed `reviewStatus` still belongs to `ProductReviewProvider`. React's optimistic value is temporary display state, not a second products array.
+
+These APIs divide one interaction into separate responsibilities:
+
+```text
+useActionState -> latest returned result, here { error }
+useFormStatus  -> whether the nearest parent form is submitting
+useOptimistic  -> temporary status displayed during that submission
+provider       -> confirmed products used by the list and summary
+```
 
 ## UI Target
 
@@ -199,6 +208,19 @@ export function useReviewAction(product: Product) {
 }
 ```
 
+React calls `reviewAction` with the previous returned state and the submitted `FormData`. This lesson does not need `_previousState`, so the underscore marks it as intentionally unused. The hidden `productId` field supplies the value read by `formData.get("productId")`.
+
+`useActionState` also returns a third `isPending` value:
+
+```tsx
+const [actionState, formAction, isPending] = useActionState(
+  reviewAction,
+  initialActionState,
+);
+```
+
+This hook does not need that third value because `ReviewSubmitButton` reads the same form submission through `useFormStatus`. Use one pending source for this button rather than maintaining another `useState` flag.
+
 The hook returns three different concerns:
 
 ```text
@@ -210,6 +232,8 @@ actionState      -> the latest error returned by the Action
 ### Conceptual Aside: Optimistic State Is Derived Display State
 
 `optimisticStatus` temporarily shadows `product.reviewStatus`; it does not edit the product object. After success, `dispatch({ type: "reviewed" })` updates the real provider state. After failure, no confirmed dispatch occurs, so React shows the original status again.
+
+When the Action settles, the optimistic overlay ends in both outcomes. On success, the confirmed provider value is now `"reviewed"`, so the badge stays reviewed. On failure, the provider value is still `"new"`, so the badge returns to new without a manual rollback dispatch.
 
 One consequence is important: only the selected panel's badge is optimistic in this focused refactor. The global summary changes after confirmation because its source remains the real provider state. Making the entire list and summary optimistic would require lifting the optimistic products array to their shared owner.
 
@@ -253,6 +277,23 @@ export function ReviewSubmitButton({
 ```
 
 `useFormStatus` must be inside a component rendered beneath the `<form>`. Calling it in the component that creates the form reads no parent form submission.
+
+```tsx
+// Wrong: this component creates the form, so it is not beneath that form.
+function ReviewActionForm() {
+  const { pending } = useFormStatus();
+  return <form>{pending ? "Marking..." : "Mark reviewed"}</form>;
+}
+
+// Correct: the child can read the nearest parent form's status.
+function ReviewActionForm() {
+  return (
+    <form>
+      <ReviewSubmitButton />
+    </form>
+  );
+}
+```
 
 ## Step 4: Build The Styled Action Form
 
@@ -407,6 +448,10 @@ This demonstrates the conditional rule difference. Do not add `OptionalProductCo
 
 `use(promise)` is a separate Suspense-based reading pattern. Do not replace the Lesson 05 client-side Effect with a freshly created Promise during render; unstable Promises can restart work and produce confusing behavior.
 
+`useEffect` runs side effects after React commits a render; it does not read a resource during rendering. `use(context)` reads Context during rendering, much like `useContext`, but may be used conditionally. `use(promise)` asks Suspense to pause that render until a compatible Promise settles; it is not a general replacement for event handlers or Effect-based client fetching.
+
+Ordinary Hooks such as `useContext` must be called unconditionally at the component's top level. `use` is the named exception that may appear after an early return or inside a conditional, while still being restricted to a component or custom Hook.
+
 ## Update The Lesson 13 Expectations
 
 The user-visible names stay the same, so the behavior tests should still query:
@@ -461,6 +506,7 @@ git push
 - Forgetting the hidden `productId` field.
 - Treating optimistic status as confirmed server state.
 - Creating a Promise during every render and passing it to `use`.
+- Assuming this client-defined Action submits without JavaScript.
 - Replacing the entire tracker just to demonstrate one modern API.
 - Dropping Tailwind classes from JSX during the refactor.
 
@@ -473,3 +519,5 @@ git push
 - Why the global summary updates after confirmation in this component-local example.
 - Why the review-note form remains separate from the status Action form.
 - How `use` differs from `useEffect` and from ordinary Hooks.
+
+Check your explanation against the lesson: `useActionState` stores the Action's latest returned error result, not products or server data. The child button uses `useFormStatus` because it is beneath the submitting form. `useOptimistic` supplies only temporary display state; successful API work dispatches the confirmed provider update, while failure leaves the provider unchanged and therefore reverts the badge. The note form remains separate because HTML forms cannot be nested and the two forms perform different actions. `use` reads Context or Suspense-compatible resources during render and has a conditional-call exception; `useEffect` performs post-render side effects, while ordinary Hooks retain the top-level call rule.

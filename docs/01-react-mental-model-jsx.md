@@ -84,6 +84,10 @@ Example idea:
 
 This is not a string. It is UI syntax that React understands through the build tool.
 
+The build tool transforms JSX into JavaScript descriptions of elements. React reads
+those descriptions and updates the browser DOM. This is why JSX can contain
+JavaScript expressions and component names instead of behaving like an HTML string.
+
 ### Big Word Alert: Expression
 
 An expression is code that produces a value.
@@ -95,6 +99,27 @@ Example idea:
 ```tsx
 <h2>{product.name}</h2>
 ```
+
+The braces switch from JSX into JavaScript for one expression. A property access,
+calculation, function call, or conditional expression can go inside them; statements
+such as `if` cannot be placed there directly.
+
+### Conceptual Aside: JSX Uses JavaScript Names
+
+JSX resembles HTML, but it is written inside JavaScript. Use `className` because
+`class` is already a JavaScript keyword and React's DOM property is named
+`className`.
+
+```tsx
+// Wrong in React JSX
+<article class="card">Keyboard</article>
+
+// Correct
+<article className="card">Keyboard</article>
+```
+
+A component must also return one root value. Wrap sibling elements in a parent
+element or a fragment (`<>...</>`) so the function returns one JSX tree.
 
 ### Conceptual Aside: Declarative UI
 
@@ -293,6 +318,10 @@ function App() {
 - Forgetting `{}` around JavaScript values in JSX.
 - Thinking JSX is HTML. It is closer to JavaScript syntax for UI.
 - Trying to refactor into components too early.
+
+The status badge also demonstrates a conditional expression: the condition chooses
+one class-name string during render. It does not modify the DOM manually; React
+renders the class that matches the current product data.
 
 ## Stop When You Can Explain
 

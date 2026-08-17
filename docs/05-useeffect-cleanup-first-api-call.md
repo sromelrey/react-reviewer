@@ -18,6 +18,8 @@ By the end of this lesson, DummyJSON products should replace the hard-coded prod
 
 A side effect is work that reaches outside rendering. Fetching data, starting a timer, and subscribing to browser events are side effects.
 
+Rendering should only calculate JSX from the current props and state. A request talks to an external system, can finish later, and can change state, so starting it while React is rendering would make rendering unpredictable. The Effect starts the request only after React has committed the screen.
+
 ### Big Word Alert: Dependency Array
 
 The dependency array lists values used by an Effect that can cause it to synchronize again. This lesson includes `requestVersion`, so clicking Retry starts a new request.
@@ -25,6 +27,8 @@ The dependency array lists values used by an Effect that can cause it to synchro
 ### Big Word Alert: Cleanup
 
 Cleanup is the function returned by an Effect. React runs it before that Effect runs again and when the component unmounts.
+
+Cleanup stops the synchronization started by the previous Effect. Here it cancels the previous request before Retry starts another one, or before the screen using that request is removed.
 
 ### Big Word Alert: AbortController
 
@@ -113,6 +117,44 @@ All API products begin with `reviewStatus: "new"`, so the first loaded summary i
 
 ## Add The Loading Effect
 
+### Why The Effect Callback Is Not Async
+
+React gives an Effect callback a specific return contract: return nothing, or return a cleanup function. An `async` function always returns a `Promise`, even when its source code has no explicit `return`. A Promise is neither of the values React accepts as Effect cleanup.
+
+```tsx
+// Wrong: React receives Promise<void>, not a cleanup function.
+useEffect(async () => {
+  const response = await fetch(url);
+}, [url]);
+
+// Correct: the Effect stays synchronous and starts async work inside it.
+useEffect(() => {
+  async function loadProducts() {
+    const response = await fetch(url);
+  }
+
+  void loadProducts();
+
+  return () => {
+    // Cancel or unsubscribe from work started by this Effect.
+  };
+}, [url]);
+```
+
+`void loadProducts()` starts the async function and deliberately ignores its returned Promise because `loadProducts` handles failures with its own `try/catch`. `void` does not make the request synchronous and does not cancel it.
+
+### How Dependencies And Cleanup Work Together
+
+For this project, `[requestVersion]` means the Effect runs after the first committed render and again whenever Retry changes `requestVersion`. Before a later run starts, React calls the previous cleanup. Values read inside an Effect should normally appear in its dependency array; otherwise the Effect can keep using an older value from the render that created it.
+
+```text
+first commit -> Effect starts request 0
+Retry -> requestVersion changes -> cleanup aborts request 0 -> Effect starts request 1
+unmount -> cleanup aborts the current request
+```
+
+An empty array, `[]`, would run only for the initial mount and would therefore prevent this Retry mechanism from starting a new request.
+
 ```tsx
 const [products, setProducts] = useState<Product[]>([]);
 const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -178,7 +220,17 @@ useEffect(() => {
 }, [requestVersion]);
 ```
 
-The Effect callback itself is not `async` because React expects it to return either nothing or a cleanup function, not a Promise.
+`fetch` rejects for failures such as a lost connection or an aborted request, but it does not reject just because the server responds with an HTTP error such as `404` or `500`. Checking `response.ok` turns those responses into the failure path deliberately.
+
+### Why Cancellation Matters
+
+The component can unmount, or Retry can begin a newer request, before the earlier request finishes. Without cancellation, that older work can finish later and try to replace newer state with stale data. `controller.abort()` cancels that request; the `AbortError` branch recognizes intentional cancellation and avoids displaying it as a real failure.
+
+The `finally` guard matters for the same reason: an aborted, outdated request must not set `isLoading` to `false` while a newer request is still running.
+
+### Conceptual Aside: Strict Mode Development Check
+
+With `<StrictMode>` enabled, React deliberately performs an extra development-only setup-and-cleanup cycle for Effects when a component first mounts. This exposes Effects whose cleanup is missing or incomplete. The first practice request may therefore start and be aborted before the next one starts; production does not perform this extra Strict Mode check.
 
 ## Add The Image To ProductRow
 
@@ -303,7 +355,27 @@ Import `type ReactNode` for the `productContent` variable:
 import { useEffect, useState, type ReactNode } from "react";
 ```
 
+`ReactNode` is the type for content React can render, including an element, text, `null`, or a collection of those values. It lets one variable hold any of the four request-state UIs.
+
 Render `{productContent}` below the existing header and filter tabs. Show the filter tabs only after loading succeeds, because there is nothing to filter during loading or failure.
+
+### Why Map The API Response
+
+DummyJSON owns fields such as `title` and `thumbnail`; the tracker owns `name`, `imageUrl`, and `reviewStatus`. Mapping at the API boundary gives the rest of the app one stable `Product` contract and supplies local values the API does not provide:
+
+```text
+ApiProduct.title     -> Product.name
+ApiProduct.thumbnail -> Product.imageUrl
+local default        -> Product.reviewStatus = "new"
+```
+
+If the API shape changes later, only the mapping code should need to change rather than every product component.
+
+After mapping, the selection update keeps the current ID only when that product exists in the new response. Otherwise it selects the first loaded product, or `null` for an empty response. This prevents the details panel from holding an ID that no longer belongs to the loaded list.
+
+### Why Retry Uses A Version
+
+Setting `requestVersion` to a new number does not represent product data. It is a small request trigger: React sees a changed Effect dependency, runs the previous cleanup, and starts the Effect again. Using the functional update guarantees each click is calculated from the latest version.
 
 ## UI Target
 

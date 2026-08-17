@@ -66,6 +66,14 @@ A rollback restores the previous local value when an optimistic request fails.
 
 Pending state means async work has started but has not settled. It prevents duplicate submissions and tells the user that the app is working.
 
+### Big Word Alert: Pure Reducer
+
+A pure reducer calculates the next state only from its current `state` and `action`. It must not call `fetch`, mutate existing objects, or perform work whose result can change outside those inputs.
+
+### Conceptual Aside: Local State And Server State Have Different Owners
+
+DummyJSON owns whether an update is accepted by the server. `ProductReviewProvider` owns the tracker's local copy, selected product, filters, and request feedback; it predicts the server result locally, then either confirms that prediction or rolls it back.
+
 ### Conceptual Aside: Optimistic UI Is A Prediction
 
 The optimistic `reviewed` badge is a prediction, not confirmed server truth. Keep the previous status until the request settles so failure can restore exactly what the user saw before.
@@ -148,6 +156,10 @@ export async function saveReviewedStatus(productId: string): Promise<void> {
 ```
 
 DummyJSON simulates the update. A production backend would persist the status in a database.
+
+`fetch` resolves even when the server returns an HTTP error such as `500`. Checking `response.ok` turns that unsuccessful response into a rejected promise so the provider's `catch` block can roll back the optimistic change.
+
+`encodeURIComponent(productId)` makes the ID safe to place in a URL path. The component does not need to know this request detail because the API service owns it.
 
 ## Step 2: Extend Reducer State
 
@@ -246,6 +258,16 @@ case "reviewMutationRolledBack":
 
 The reducer stays pure: it calculates next state but never performs the request.
 
+The three actions describe facts rather than commands:
+
+```text
+reviewMutationStarted    -> predict reviewed and remember which request is pending
+reviewMutationConfirmed  -> keep reviewed and clear request feedback
+reviewMutationRolledBack -> restore previousStatus and expose the error
+```
+
+Each `map` call creates a new products array, and `{ ...product }` creates a new object only for the changed product. The reducer does not mutate `state.products`, which lets React reliably detect the new state.
+
 ## Step 4: Coordinate The Mutation In The Provider
 
 Import the service into `ProductReviewProvider` and add this function beside the reducer:
@@ -280,6 +302,10 @@ const markProductReviewed = useCallback(
   [state.products],
 );
 ```
+
+`previousStatus` is captured before the optimistic dispatch. If the request fails, the provider sends that exact value back to the reducer instead of guessing that every product was previously `"new"`.
+
+The `try` block confirms only after `await saveReviewedStatus(productId)` succeeds. The `catch` block handles both network failures and the non-success HTTP responses converted into errors by `response.ok`.
 
 Expose it in the existing context value and update the context type:
 
@@ -373,6 +399,8 @@ export function ReviewMutationControls({
 
 The classes live in the actual JSX so the UI can be built directly from the lesson.
 
+The click handlers use `void markProductReviewed(product.id)` because React does not use the Promise returned by an event handler. `void` makes it explicit that pending, success, and failure are reported through context state rather than by awaiting the Promise inside this button component.
+
 ## Step 6: Add It To The Existing Details Panel
 
 Keep the image, badge, description, price, and review-note form already in `SelectedProductPanel`. Add the controls after those elements:
@@ -457,3 +485,5 @@ git push
 - Why the UI changes before `saveReviewedStatus` resolves.
 - How the previous status makes rollback possible.
 - Why `ReviewMutationControls` receives one `Product`, not the whole products array.
+
+Check your explanation against the lesson: the provider owns the local UI copy and mutation feedback; DummyJSON owns the request result. The provider performs the side effect, while the reducer only calculates immutable next state. The optimistic action changes the local copy immediately, and `previousStatus` supplies the exact rollback value. `ReviewMutationControls` needs only the selected product because the provider already owns and updates the full collection.

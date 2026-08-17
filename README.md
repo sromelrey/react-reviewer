@@ -17,6 +17,17 @@ Each lesson uses two teaching patterns:
 
 Do not be intimidated by the vocabulary. Most of it is just naming ideas you will already see in the code.
 
+### Teaching Completeness Rule
+
+`Stop When You Can Explain` is a recall checkpoint, not a guessing exercise. Every question in that section must already be covered earlier in the lesson through:
+
+1. A plain-language explanation of what the concept means.
+2. The reason React behaves that way or the problem the concept solves.
+3. A focused code example when behavior or syntax matters.
+4. A direct connection to the Product Review Tracker code being changed.
+
+For important mistakes, the lesson should contrast the incorrect and correct patterns before asking you to explain them. If a checkpoint question introduces a new fact, the lesson is incomplete and should be corrected before moving forward.
+
 ## Main Learning Path
 
 | Level        | Topic                                                                                      | What To Learn                                                       | Code After Learning                                           |
@@ -66,8 +77,8 @@ Build one app throughout the study:
 | [x]  | 1     | [React Mental Model And JSX](./docs/01-react-mental-model-jsx.md) | Static product cards. [Image](./assets/01-static-product-cards.png) |
 | [x]  | 2     | [Props And Component Composition](./docs/02-props-composition.md) | Product cards split into reusable components with a reviewed summary. |
 | [x]  | 3     | [Events And useState](./docs/03-events-usestate.md) | Click a product and show selected product details. [Image](./assets/03-product-selection.png) |
-| [ ]  | 4     | [Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md) | Product list, filters, and reviewed count. [Image](./assets/04-selection-filters-derived-state.png) |
-| [ ]  | 5     | [useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Loading, error, empty, and success states. [Image](./assets/05-api-loading-error-success.png) |
+| [x]  | 4     | [Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md) | Product list, filters, and reviewed count. [Image](./assets/04-selection-filters-derived-state.png) |
+| [x]  | 5     | [useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Loading, error, empty, and success states. [Image](./assets/05-api-loading-error-success.png) |
 | [ ]  | 6     | [State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md) | Parent-owned product state passed through props. [Image](./assets/05-api-loading-error-success.png) |
 | [ ]  | 7     | [useReducer](./docs/07-usereducer.md) | Product state converted to reducer actions. [Image](./assets/07-reducer-review-action.png) |
 | [ ]  | 8     | [Context API And Provider Hook](./docs/08-context-api-provider-hook.md) | Product state shared through provider hook. [Image](./assets/07-reducer-review-action.png) |
@@ -86,7 +97,8 @@ For every topic:
 2. Study one small example.
 3. Code a small practice.
 4. Apply the concept to the Product Review Tracker.
-5. Explain what problem the concept solved.
+5. Answer `Stop When You Can Explain` using only material already taught in the lesson.
+6. Explain what problem the concept solved in your own words.
 
 ## App Goal
 

@@ -1,6 +1,5 @@
-import type { Product } from "../src/App";
+import type { Product } from "../src/types/product";
 import ProductStatusBadge from "./ProductStatusBadge";
-
 
 type ProductRowProps = {
   product: Product;
@@ -21,12 +20,12 @@ function ProductRow({ product, isSelected, onSelect }: ProductRowProps) {
       onClick={() => onSelect(product.id)}
     >
       <span className='flex min-w-0 items-center gap-4'>
-        <span
-          className='flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xl font-bold text-slate-500'
-          aria-hidden='true'
-        >
-          {product.name.charAt(0)}
-        </span>
+        <img
+          className='h-16 w-16 shrink-0 rounded-md bg-slate-100 object-cover'
+          src={product.imageUrl}
+          alt=''
+        />
+
         <span className='truncate text-lg font-semibold text-slate-950'>
           {product.name}
         </span>
@@ -35,5 +34,5 @@ function ProductRow({ product, isSelected, onSelect }: ProductRowProps) {
       <ProductStatusBadge status={product.reviewStatus} />
     </button>
   );
-} 
+}
 export default ProductRow;
