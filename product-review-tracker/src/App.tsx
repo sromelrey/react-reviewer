@@ -1,12 +1,14 @@
 import "./App.css";
+import ProductCard from "../components/ProductCard";
+import ReviewSummary from "../components/ReviewSummary";
 
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  reviewStatus: "new" | "reviewed";
-};
+ export type Product = {
+   id: string;
+   name: string;
+   description: string;
+   price: number;
+   reviewStatus: "new" | "reviewed";
+ };
 
 const products: Product[] = [
   {
@@ -43,34 +45,8 @@ function App() {
           Product Review Tracker
         </h1>
         <p className='mt-2 text-lg text-slate-600'>Static product cards</p>
-
-        <div className='grid gap-4 md:grid-cols-3'>
-          {products.map((product) => (
-            <article
-              key={product.id}
-              className='rounded-lg border border-slate-200 bg-white p-4 shadow-sm'
-            >
-              <h2 className='text-xl font-semibold text-slate-950'>
-                {product.name}
-              </h2>
-              <p className='mt-2 text-sm leading-6 text-slate-600'>
-                {product.description}
-              </p>
-              <p className='mt-4 text-lg font-bold text-slate-950'>
-                ${product.price}
-              </p>
-              <span
-                className={
-                  product.reviewStatus === "new"
-                    ? "rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-sm font-medium text-amber-700"
-                    : "rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-sm font-medium text-emerald-700"
-                }
-              >
-                {product.reviewStatus}
-              </span>
-            </article>
-          ))}
-        </div>
+        <ReviewSummary products={products} />
+        <ProductCard products={products} />
       </section>
     </main>
   );

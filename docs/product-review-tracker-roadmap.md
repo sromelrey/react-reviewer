@@ -14,6 +14,12 @@ The app starts in one file, then gets refactored as the lessons introduce better
 
 ![Final Product Review Tracker](../assets/final-product-review-tracker.png)
 
+## Styling Rule
+
+Use Tailwind as copy/paste styling while studying React.
+
+The goal is to remove styling friction, not to turn this into a CSS lesson. Each lesson should either suggest Tailwind classes for new UI or tell you to preserve the existing styling when the lesson is about architecture.
+
 ## One-File First
 
 Start with one file so the behavior is easy to see:

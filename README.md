@@ -8,6 +8,15 @@ Learn the concept -> see a small example -> code the concept -> apply it to one 
 
 The goal is not to memorize hooks. The goal is to understand why React features exist, then use them in a small app from scratch.
 
+## How To Read The Lessons
+
+Each lesson uses two teaching patterns:
+
+- **Big Word Alert**: a pause for vocabulary that may sound more complicated than it really is. When a term matters, we define it, explain it plainly, and show how it is used.
+- **Conceptual Aside**: a short side explanation for an important idea that supports the main lesson. These asides cover concepts you will see again and again as the app grows.
+
+Do not be intimidated by the vocabulary. Most of it is just naming ideas you will already see in the code.
+
 ## Main Learning Path
 
 | Level        | Topic                                                                                      | What To Learn                                                       | Code After Learning                                           |
@@ -52,8 +61,8 @@ Build one app throughout the study:
 
 | Done | Phase | Lesson | Output |
 | ---- | ----- | ------ | ------ |
-| [ ]  | 1     | [React Mental Model And JSX](./docs/01-react-mental-model-jsx.md) | Static product cards. [Image](./assets/01-static-product-cards.png) |
-| [ ]  | 2     | [Props And Component Composition](./docs/02-props-composition.md) | Product cards split into reusable components. |
+| [x]  | 1     | [React Mental Model And JSX](./docs/01-react-mental-model-jsx.md) | Static product cards. [Image](./assets/01-static-product-cards.png) |
+| [x]  | 2     | [Props And Component Composition](./docs/02-props-composition.md) | Product cards split into reusable components with a reviewed summary. |
 | [ ]  | 3     | [Events And useState](./docs/03-events-usestate.md) | Click a product and show selected product details. [Image](./assets/04-selection-filters-derived-state.png) |
 | [ ]  | 4     | [Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md) | Product list, filters, and reviewed count. [Image](./assets/04-selection-filters-derived-state.png) |
 | [ ]  | 5     | [useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Loading, error, empty, and success states. [Image](./assets/05-api-loading-error-success.png) |
