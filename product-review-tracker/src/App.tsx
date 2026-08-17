@@ -1,11 +1,9 @@
 import "./App.css";
-import FilterTabs from "../components/FilterTabs";
-import ProductList from "../components/ProductList";
-import SelectedProductPanel from "../components/SelectedProductPanel";
-import ProductLoadError from "../components/ProductLoadError";
-import ProductListSkeleton from "../components/ProductListSkeleton";
+import ProductWorkspace from "../components/ProductWorkSpace";
+import ProductLoadError from "../components/ProductWorkSpace/ProductLoadError";
+import ProductListSkeleton from "../components/ProductWorkSpace/ProductListSkeleton";
 import ReviewSummary from "../components/ReviewSummary";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import type { Product, ProductFilter, ProductsResponse } from "./types/product";
 
  
@@ -93,35 +91,20 @@ function App() {
     return () => controller.abort();
   }, [requestVersion]);
 
-  let productContent: ReactNode;
 
-  if (isLoading) {
-    productContent = <ProductListSkeleton />;
-  } else if (error) {
-    productContent = (
-      <ProductLoadError
-        message={error}
-        onRetry={() => setRequestVersion((version) => version + 1)}
-      />
-    );
-  } else if (products.length === 0) {
-    productContent = (
-      <p className='rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600'>
-        No products found.
-      </p>
-    );
-  } else {
-    productContent = (
-      <div className='grid gap-4 md:grid-cols-[minmax(0,1fr)_360px]'>
-        <ProductList
-          products={visibleProducts}
-          selectedProductId={selectedProductId}
-          onSelect={setSelectedProductId}
-        />
-        <SelectedProductPanel product={selectedProduct} />
-      </div>
-    );
+
+  function handleSelectProduct(productId: string) {
+    setSelectedProductId(productId);
   }
+
+  function handleFilterChange(nextFilter: ProductFilter) {
+    setFilter(nextFilter);
+  }
+
+  function handleRetry() {
+    setRequestVersion((version) => version + 1);
+  }
+
   return (
     <main className='min-h-screen bg-slate-50 p-6 text-slate-950'>
       <section className='mx-auto max-w-6xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm'>
@@ -140,9 +123,29 @@ function App() {
         </header>
 
         <div className='mt-6'>
-          <FilterTabs filter={filter} onFilterChange={setFilter} />
+          {isLoading ? <ProductListSkeleton /> : null}
+
+          {!isLoading && error ? (
+            <ProductLoadError message={error} onRetry={handleRetry} />
+          ) : null}
+
+          {!isLoading && !error && products.length === 0 ? (
+            <p className='rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600'>
+              No products found.
+            </p>
+          ) : null}
+
+          {!isLoading && !error && products.length > 0 ? (
+            <ProductWorkspace
+              visibleProducts={visibleProducts}
+              selectedProductId={selectedProductId}
+              selectedProduct={selectedProduct}
+              filter={filter}
+              onFilterChange={handleFilterChange}
+              onSelectProduct={handleSelectProduct}
+            />
+          ) : null}
         </div>
-        {productContent}
       </section>
     </main>
   );

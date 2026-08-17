@@ -1,5 +1,5 @@
 import ProductRow from "./ProductRow";
-import type { Product } from "../src/types/product";
+import type { Product } from "../../src/types/product";
 
 type ProductListProps = {
   products: Product[];

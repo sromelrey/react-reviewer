@@ -79,7 +79,7 @@ Build one app throughout the study:
 | [x]  | 3     | [Events And useState](./docs/03-events-usestate.md) | Click a product and show selected product details. [Image](./assets/03-product-selection.png) |
 | [x]  | 4     | [Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md) | Product list, filters, and reviewed count. [Image](./assets/04-selection-filters-derived-state.png) |
 | [x]  | 5     | [useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Loading, error, empty, and success states. [Image](./assets/05-api-loading-error-success.png) |
-| [ ]  | 6     | [State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md) | Parent-owned product state passed through props. [Image](./assets/05-api-loading-error-success.png) |
+| [x]  | 6     | [State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md) | Parent-owned product state passed through props. [Image](./assets/05-api-loading-error-success.png) |
 | [ ]  | 7     | [useReducer](./docs/07-usereducer.md) | Product state converted to reducer actions. [Image](./assets/07-reducer-review-action.png) |
 | [ ]  | 8     | [Context API And Provider Hook](./docs/08-context-api-provider-hook.md) | Product state shared through provider hook. [Image](./assets/07-reducer-review-action.png) |
 | [ ]  | 9     | [Forms And Validation](./docs/09-forms-validation.md) | Review note form with validation. [Image](./assets/09-review-note-form.png) |

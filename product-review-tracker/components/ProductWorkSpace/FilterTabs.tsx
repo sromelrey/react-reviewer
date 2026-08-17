@@ -1,4 +1,4 @@
-import type { ProductFilter } from "../src/types/product";
+import type { ProductFilter } from "../../src/types/product";
 
 type FilterTabsProps = {
   filter: ProductFilter;

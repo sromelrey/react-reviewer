@@ -1,5 +1,5 @@
 import ProductStatusBadge from "./ProductStatusBadge";
-import type { Product } from "../src/types/product";
+import type { Product } from "../../src/types/product";
 
 type SelectedProductPanelProps = {
   product: Product | undefined;

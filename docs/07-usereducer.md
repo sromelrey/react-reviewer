@@ -32,7 +32,28 @@ An action is an object describing what happened. Its `type` names the event and 
 
 ### Big Word Alert: Pure Function
 
-A pure function does not mutate its inputs or perform side effects. Given the same state and action, a reducer should return the same next state.
+A pure function calculates and returns a result without changing anything outside itself. Given the same state and action, a pure reducer returns the same next state.
+
+A reducer stays pure when it:
+
+- Does not mutate the existing state or action.
+- Does not call `fetch`, write to `localStorage`, start timers, or change external variables.
+- Does not depend on unpredictable values such as `Date.now()` or `Math.random()`.
+- Returns a new object for the parts of state that changed.
+
+```ts
+// Wrong: changes the object React passed into the reducer.
+state.selectedProductId = action.productId;
+return state;
+
+// Correct: calculates a new state object.
+return {
+  ...state,
+  selectedProductId: action.productId,
+};
+```
+
+The reducer only decides the next state. Network requests and other side effects happen outside the reducer, then dispatch an action containing the result.
 
 ### Big Word Alert: Discriminated Union
 
