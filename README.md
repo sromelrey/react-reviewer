@@ -23,15 +23,15 @@ Do not be intimidated by the vocabulary. Most of it is just naming ideas you wil
 | ------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
 | Basic        | [01 React Mental Model And JSX](./docs/01-react-mental-model-jsx.md)                       | Components are functions, JSX, rendering UI from data.              | Render static product cards.                                  |
 | Basic        | [02 Props And Component Composition](./docs/02-props-composition.md)                       | Passing data through props, `children`, reusable components.        | Split product card into smaller components.                   |
-| Basic        | [03 Events And useState](./docs/03-events-usestate.md)                                     | Event handlers, local state, controlled inputs.                     | Select a product and update UI on click.                      |
-| Basic        | [04 Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md)                 | `.map`, stable `key`, filtering, derived counts.                    | Render product list and reviewed count.                       |
-| Basic-Mid    | [05 useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Effects, dependency array, cleanup, async loading basics.           | Plan a DummyJSON Products API call and loading/error states.  |
+| Basic        | [03 Events And useState](./docs/03-events-usestate.md)                                     | Event handlers, local state, and state-driven rendering.            | Select a product and update UI on click.                      |
+| Basic        | [04 Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md)                 | `.map`, stable `key`, filtering, derived counts.                    | Render and filter the product list.                           |
+| Basic-Mid    | [05 useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Effects, dependency array, cleanup, async loading basics.           | Load DummyJSON products and render async UI states.           |
 | Mid          | [06 State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md)             | Lifting state, props chain, prop drilling problem.                  | Move state to a parent and pass actions down.                 |
 | Mid          | [07 useReducer](./docs/07-usereducer.md)                                                   | Reducer, action, dispatch, predictable state transitions.           | Convert product actions to reducer actions.                   |
 | Mid          | [08 Context API And Provider Hook](./docs/08-context-api-provider-hook.md)                 | Context, provider, custom hook, avoiding prop drilling.             | Share product state/actions without passing props everywhere. |
 | Mid          | [09 Forms And Validation](./docs/09-forms-validation.md)                                   | Controlled forms, form submit, validation messages.                 | Add product/review form.                                      |
-| Mid-Advanced | [10 useMemo, useCallback, And memo](./docs/10-memoization.md)                              | Memoized values, stable callbacks, memoized components.             | Optimize filtered list and product rows.                      |
-| Advanced     | [11 Custom Hooks](./docs/11-custom-hooks.md)                                               | Extracting reusable state/effect logic.                             | Create `useProducts` or `useProductReview`.                   |
+| Mid-Advanced | [10 useMemo, useCallback, And memo](./docs/10-memoization.md)                              | Product search, memoized values, stable callbacks, `memo`.          | Add search and optimize the product rows.                     |
+| Advanced     | [11 Custom Hooks](./docs/11-custom-hooks.md)                                               | Extracting reusable state/effect logic.                             | Extract focused hooks without replacing the context hook.     |
 | Advanced     | [12 Async UI And API Integration](./docs/12-api-integration.md)                            | Fetching, mutation, optimistic update, rollback.                    | Mark reviewed through an API service.                         |
 | Advanced     | [13 Testing React Behavior](./docs/13-testing-react-behavior.md)                           | React Testing Library, user events, mocks/MSW, Jest/Vitest.         | Test selecting and marking a product reviewed.                |
 | Advanced     | [14 React 19 Modern APIs Overview](./docs/14-react-19-modern-apis.md)                      | `use`, Actions, `useActionState`, `useFormStatus`, `useOptimistic`. | Compare modern APIs with the normal React app flow.           |
@@ -53,9 +53,11 @@ Build one app throughout the study:
 | 7     | Product reducer             | `useReducer`, actions, dispatch.                           |
 | 8     | Global product provider     | Context API, provider hook.                                |
 | 9     | Review form                 | Controlled inputs, form submit, validation.                |
-| 10    | Optimized product list      | `useMemo`, `useCallback`, `memo`.                          |
-| 11    | API mutation                | API service, optimistic update, rollback.                  |
-| 12    | Behavior tests              | React Testing Library, userEvent, mock API/MSW.            |
+| 10    | Search and optimized list   | Controlled search, `useMemo`, `useCallback`, `memo`.       |
+| 11    | Extracted app logic         | Custom hooks and reusable state/effect logic.              |
+| 12    | API mutation                | API service, optimistic update, rollback.                  |
+| 13    | Behavior tests              | React Testing Library, userEvent, mock API/MSW.            |
+| 14    | React 19 comparison         | Modern form/action APIs and optimistic UI.                 |
 
 ## Build Checklist
 
@@ -63,18 +65,18 @@ Build one app throughout the study:
 | ---- | ----- | ------ | ------ |
 | [x]  | 1     | [React Mental Model And JSX](./docs/01-react-mental-model-jsx.md) | Static product cards. [Image](./assets/01-static-product-cards.png) |
 | [x]  | 2     | [Props And Component Composition](./docs/02-props-composition.md) | Product cards split into reusable components with a reviewed summary. |
-| [ ]  | 3     | [Events And useState](./docs/03-events-usestate.md) | Click a product and show selected product details. [Image](./assets/04-selection-filters-derived-state.png) |
+| [x]  | 3     | [Events And useState](./docs/03-events-usestate.md) | Click a product and show selected product details. [Image](./assets/03-product-selection.png) |
 | [ ]  | 4     | [Lists, Keys, And Derived State](./docs/04-lists-keys-derived-state.md) | Product list, filters, and reviewed count. [Image](./assets/04-selection-filters-derived-state.png) |
 | [ ]  | 5     | [useEffect, Cleanup, And First API Call](./docs/05-useeffect-cleanup-first-api-call.md) | Loading, error, empty, and success states. [Image](./assets/05-api-loading-error-success.png) |
-| [ ]  | 6     | [State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md) | Parent-owned product state passed through props. |
-| [ ]  | 7     | [useReducer](./docs/07-usereducer.md) | Product state converted to reducer actions. |
-| [ ]  | 8     | [Context API And Provider Hook](./docs/08-context-api-provider-hook.md) | Product state shared through provider hook. |
-| [ ]  | 9     | [Forms And Validation](./docs/09-forms-validation.md) | Review note form with validation. |
-| [ ]  | 10    | [useMemo, useCallback, And memo](./docs/10-memoization.md) | Optimized filtered list and product rows. |
-| [ ]  | 11    | [Custom Hooks](./docs/11-custom-hooks.md) | Reusable app logic extracted into hooks. |
+| [ ]  | 6     | [State Ownership And Props Chain](./docs/06-state-ownership-props-chain.md) | Parent-owned product state passed through props. [Image](./assets/05-api-loading-error-success.png) |
+| [ ]  | 7     | [useReducer](./docs/07-usereducer.md) | Product state converted to reducer actions. [Image](./assets/07-reducer-review-action.png) |
+| [ ]  | 8     | [Context API And Provider Hook](./docs/08-context-api-provider-hook.md) | Product state shared through provider hook. [Image](./assets/07-reducer-review-action.png) |
+| [ ]  | 9     | [Forms And Validation](./docs/09-forms-validation.md) | Review note form with validation. [Image](./assets/09-review-note-form.png) |
+| [ ]  | 10    | [useMemo, useCallback, And memo](./docs/10-memoization.md) | Search input and optimized filtered product rows. [Image](./assets/10-search-memoization.png) |
+| [ ]  | 11    | [Custom Hooks](./docs/11-custom-hooks.md) | Reusable app logic extracted into hooks. [Image](./assets/10-search-memoization.png) |
 | [ ]  | 12    | [Async UI And API Integration](./docs/12-api-integration.md) | API mutation, optimistic update, and rollback. [Final Image](./assets/final-product-review-tracker.png) |
-| [ ]  | 13    | [Testing React Behavior](./docs/13-testing-react-behavior.md) | Behavior test for selecting and reviewing a product. |
-| [ ]  | 14    | [React 19 Modern APIs Overview](./docs/14-react-19-modern-apis.md) | Compare modern APIs with the normal app flow. |
+| [ ]  | 13    | [Testing React Behavior](./docs/13-testing-react-behavior.md) | Behavior test for selecting and reviewing a product. [Image](./assets/final-product-review-tracker.png) |
+| [ ]  | 14    | [React 19 Modern APIs Overview](./docs/14-react-19-modern-apis.md) | Compare modern APIs with the normal app flow. [Image](./assets/final-product-review-tracker.png) |
 
 ## Study Rule
 
@@ -93,6 +95,7 @@ By the end, the Product Review Tracker should support:
 - Product list.
 - Product selection.
 - Status filter: all, new, reviewed.
+- Product search.
 - Reviewed count.
 - Add or edit review notes.
 - Load products from a fake/API service.
@@ -106,7 +109,7 @@ By the end, the Product Review Tracker should support:
 Use DummyJSON for product API practice:
 
 ```text
-GET https://dummyjson.com/products?limit=5
+GET https://dummyjson.com/products?limit=3
 GET https://dummyjson.com/products/1
 ```
 
@@ -118,7 +121,7 @@ This API call should be introduced after the first fundamentals:
 components -> props -> events -> useState -> lists/keys -> derived state -> useEffect API call
 ```
 
-For now, this is only part of the learning plan. We will create the actual files later when the fundamentals topics are ready.
+Lesson 05 performs the first real `GET` request. Lesson 12 adds a mutation and optimistic UI after the state architecture is established.
 
 ## Checkpoint Questions
 

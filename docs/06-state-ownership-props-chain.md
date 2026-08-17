@@ -4,73 +4,241 @@
 
 ## Goal
 
-Understand where state should live before reaching for Context API.
+Make state ownership and data flow intentional before introducing Context API.
 
-By the end of this lesson, your app should still look the same, but product state should live in the top-level app component.
+By the end of this lesson, the tracker should behave and look the same as lesson 05, but the component boundaries and prop contracts should clearly show how `App` owns state and shares it with descendants.
 
 ## Big Words
 
 ### Big Word Alert: State Ownership
 
-State ownership means deciding which component is responsible for holding and changing a piece of state.
-
-The owner should be the closest common parent of all components that need that state.
+State ownership means deciding which component stores and changes a piece of state. The owner should be the closest common parent of every component that needs to read or update it.
 
 ### Big Word Alert: Lifting State
 
-Lifting state means moving state from a child component up to a parent component.
+Lifting state means moving state from a child to a common parent so sibling components can share one source of truth.
 
-You do this when multiple components need to read or change the same state.
+In this tracker, the state already lives in `App`, so do not move it again. Lesson 03 placed selection there, lesson 04 added the filter there, and lesson 05 added API state there. This lesson explains why that ownership is correct.
 
 ### Big Word Alert: Props Chain
 
-A props chain is when state and callbacks are passed from parent to child to deeper child.
+A props chain is data and callbacks moving through more than one component level:
+
+```text
+App -> ProductWorkspace -> ProductList -> ProductRow
+```
 
 ### Big Word Alert: Prop Drilling
 
-Prop drilling is when props pass through components that do not personally need them, just to reach deeper components.
+Prop drilling occurs when an intermediate component receives props mainly so it can forward them to a deeper component.
 
-### Conceptual Aside: Feel The Pain Before Context
+### Big Word Alert: Callback Prop
 
-Do not jump to Context API too early.
+A callback prop is a function passed from a parent to a child. The child reports an event upward by calling it; the parent that owns the state decides how state changes.
 
-First, pass props manually so you understand the problem Context will solve later.
+### Conceptual Aside: Data Flows Down And Events Flow Up
 
-## App Step
+Parents pass current data down through props. Children report user actions upward through callback props. This one-way flow makes it possible to trace where a displayed value came from and where it can change.
 
-Move product state to the top-level app component.
+## Keep The Cumulative Data Model
 
-Pass products, selected product, and actions down through props.
+Do not remove fields introduced in lesson 05:
+
+```ts
+type ReviewStatus = "new" | "reviewed";
+type ProductFilter = "all" | ReviewStatus;
+
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  reviewStatus: ReviewStatus;
+};
+```
+
+`App` continues to own:
+
+```text
+products
+selectedProductId
+filter
+isLoading
+error
+requestVersion
+```
+
+These remain derived values, not state:
+
+```text
+visibleProducts
+selectedProduct
+reviewedCount
+```
 
 ## What To Build
 
-Keep the current UI.
-
-Change the architecture:
+Extract a `ProductWorkspace` component between `App` and the UI components. This produces a real props chain that Context API will simplify in lesson 08.
 
 ```text
-App owns products, selectedProductId, filter
--> App passes data and callbacks to children
--> children call callbacks instead of changing state directly
+App owns state and runs the API Effect
+-> ReviewSummary receives counts
+-> ProductWorkspace receives tracker data and callbacks
+   -> FilterTabs receives filter and onFilterChange
+   -> ProductList receives products, selection, and onSelect
+      -> ProductRow receives one product
+   -> SelectedProductPanel receives the selected product
 ```
 
 Visible UI change:
 
 ```text
-none expected
-selection, filters, summary, and details panel should still work
+none
 ```
+
+The header, tabs, two-column layout, loading/error/empty states, product images, selection, and details panel must remain visually unchanged.
 
 ## Build Steps
 
-1. Identify which component currently owns product state.
-2. Move `products`, `selectedProductId`, and `filter` to `App`.
-3. Create callback functions in `App`.
-4. Pass products into product list component.
-5. Pass selected product into details panel.
-6. Pass callbacks into child components.
-7. Confirm selecting and filtering still work.
-8. Notice which props are becoming repetitive.
+1. Confirm every `useState` and the API Effect are in `App`.
+2. Keep `visibleProducts`, `selectedProduct`, and `reviewedCount` derived in `App`.
+3. Create clearly named handlers in `App`: `handleSelectProduct`, `handleFilterChange`, and `handleRetry`.
+4. Create `ProductWorkspaceProps` with the exact values and callbacks the workspace forwards.
+5. Move the filter tabs and two-column success layout into `ProductWorkspace`.
+6. Pass `filter` and `onFilterChange` to `FilterTabs`.
+7. Pass filtered products, selected ID, and `onSelect` to `ProductList`.
+8. Pass the selected product to `SelectedProductPanel`.
+9. Keep loading, error, and empty branches in `App`, because they depend on App-owned request state.
+10. Verify every interaction still works before and after the refactor.
+11. Identify the props that `ProductWorkspace` only forwards. Those are the prop-drilling pressure that lesson 08 will address.
+
+## Name The App Handlers
+
+```tsx
+function handleSelectProduct(productId: string) {
+  setSelectedProductId(productId);
+}
+
+function handleFilterChange(nextFilter: ProductFilter) {
+  setFilter(nextFilter);
+}
+
+function handleRetry() {
+  setRequestVersion((version) => version + 1);
+}
+```
+
+Names such as `handleSelectProduct` explain the event. A generic name such as `handleClick` hides the intent.
+
+## Build ProductWorkspace
+
+```tsx
+type ProductWorkspaceProps = {
+  visibleProducts: Product[];
+  selectedProductId: string | null;
+  selectedProduct: Product | undefined;
+  filter: ProductFilter;
+  onFilterChange: (filter: ProductFilter) => void;
+  onSelectProduct: (productId: string) => void;
+};
+
+function ProductWorkspace({
+  visibleProducts,
+  selectedProductId,
+  selectedProduct,
+  filter,
+  onFilterChange,
+  onSelectProduct,
+}: ProductWorkspaceProps) {
+  return (
+    <section aria-label="Product review workspace">
+      <FilterTabs filter={filter} onFilterChange={onFilterChange} />
+
+      <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_360px]">
+        <ProductList
+          products={visibleProducts}
+          selectedProductId={selectedProductId}
+          onSelect={onSelectProduct}
+        />
+
+        <SelectedProductPanel product={selectedProduct} />
+      </div>
+    </section>
+  );
+}
+```
+
+Notice that `ProductWorkspace` does not select a product or change a filter itself. It lays out the feature and forwards events to the owner.
+
+Update the nullable selection prop introduced by API loading:
+
+```tsx
+type ProductListProps = {
+  products: Product[];
+  selectedProductId: string | null;
+  onSelect: (productId: string) => void;
+};
+```
+
+## Connect App To The Props Chain
+
+Keep the page styling in actual JSX:
+
+```tsx
+return (
+  <main className="min-h-screen bg-slate-50 p-6 text-slate-950">
+    <div className="mx-auto max-w-6xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <header className="flex flex-col gap-4 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-slate-950">
+            Product Review Tracker
+          </h1>
+          <p className="text-lg text-slate-600">Review products by status</p>
+        </div>
+
+        <ReviewSummary
+          reviewedCount={reviewedCount}
+          totalCount={products.length}
+        />
+      </header>
+
+      <div className="mt-6">
+        {isLoading ? <ProductListSkeleton /> : null}
+
+        {!isLoading && error ? (
+          <ProductLoadError message={error} onRetry={handleRetry} />
+        ) : null}
+
+        {!isLoading && !error && products.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
+            No products found.
+          </p>
+        ) : null}
+
+        {!isLoading && !error && products.length > 0 ? (
+          <ProductWorkspace
+            visibleProducts={visibleProducts}
+            selectedProductId={selectedProductId}
+            selectedProduct={selectedProduct}
+            filter={filter}
+            onFilterChange={handleFilterChange}
+            onSelectProduct={handleSelectProduct}
+          />
+        ) : null}
+      </div>
+    </div>
+  </main>
+);
+```
+
+This is intentionally verbose. Lesson 08 will remove repeated feature props with Context, but loading state can still remain close to the component that owns the request.
+
+## UI Target
+
+![API loading, error, and success states](../assets/05-api-loading-error-success.png)
+
+This is an architecture-only refactor. Preserve the API thumbnails and all request states from lesson 05; do not return to the placeholder rows shown in lesson 04.
 
 ## Git Checkpoint
 
@@ -80,62 +248,28 @@ Before coding:
 git status
 ```
 
-After coding:
+After the UI and behavior match lesson 05:
 
 ```powershell
 git status
 git add .
-git commit -m "refactor(state): lift product state to app component"
+git commit -m "refactor(state): make product state ownership explicit"
 git push
-```
-
-## UI Target
-
-Keep the same screen while changing where state lives:
-
-![Selection and filters](../assets/04-selection-filters-derived-state.png)
-
-Expected visible behavior:
-
-```text
-click product -> selected panel changes
-click filter -> list changes
-reviewed count still matches products
-```
-
-## Suggested Prop Flow
-
-```text
-App
--> ReviewSummary
--> FilterTabs
--> ProductList
-   -> ProductRow
--> SelectedProductPanel
-```
-
-## Tailwind Classes To Preserve
-
-Do not redesign in this lesson. Reuse the same classes from lessons 03 and 04:
-
-```text
-Layout: grid gap-4 md:grid-cols-[1fr_360px]
-Filter Group: inline-flex overflow-hidden rounded-lg border border-slate-300
-Selected Row: border-blue-500 bg-blue-50
-Panel: rounded-lg border border-slate-200 bg-white p-4 shadow-sm
-Counter: rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 font-semibold
 ```
 
 ## Common Mistakes
 
-- Letting two components own the same state.
-- Duplicating selected product and selected product ID.
-- Passing callbacks with unclear names like `handleClick`.
-- Using Context before understanding which props are actually painful.
+- Moving state out of `App` even though multiple sibling areas need it.
+- Duplicating the selected product object in state instead of deriving it from the ID.
+- Giving `ProductWorkspace` its own copy of `filter` or `products` state.
+- Passing `setState` everywhere without naming the event at the ownership boundary.
+- Changing the UI while performing an architecture-only lesson.
+- Using Context now instead of first observing which props are repetitive.
 
 ## Stop When You Can Explain
 
-- Which component owns the product state.
-- Why prop drilling becomes painful.
-- Why Context API should solve a real problem, not appear too early.
-- Which props you expect Context API to remove later.
+- Why `App` is the correct owner for this shared state.
+- Why lifting state is defined here even though no further lift is needed.
+- Which data flows down and which events flow up.
+- Where the props chain becomes prop drilling.
+- Which `ProductWorkspace` props Context API could remove later.

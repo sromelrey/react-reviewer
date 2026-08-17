@@ -1,19 +1,13 @@
-import type { Product } from "../src/App";
-
 type ReviewSummaryProps = {
-  products: Product[];
+  reviewedCount: number;
+  totalCount: number;
 };
 
-function ReviewSummary({ products }: ReviewSummaryProps) {
-  const reviewedCount = products.filter(
-    (product) => product.reviewStatus === "reviewed",
-  ).length;
-
+function ReviewSummary({ reviewedCount, totalCount }: ReviewSummaryProps) {
   return (
-    <p className='text-sm text-slate-600'>
-      Reviewed {reviewedCount} of {products.length} products
+    <p className='rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 font-semibold text-slate-700'>
+      Reviewed: {reviewedCount}/{totalCount}
     </p>
   );
 }
-
 export default ReviewSummary;
