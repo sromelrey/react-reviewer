@@ -10,6 +10,7 @@ type ProductWorkspaceProps = {
   filter: ProductFilter;
   onFilterChange: (filter: ProductFilter) => void;
   onSelectProduct: (productId: string) => void;
+  onMarkReviewed: (productId: string) => void;
 };
 
 function ProductWorkspace({
@@ -19,6 +20,7 @@ function ProductWorkspace({
   filter,
   onFilterChange,
   onSelectProduct,
+  onMarkReviewed,
 }: ProductWorkspaceProps) {
   return (
     <section aria-label='Product review workspace'>
@@ -31,7 +33,10 @@ function ProductWorkspace({
           onSelect={onSelectProduct}
         />
 
-        <SelectedProductPanel product={selectedProduct} />
+        <SelectedProductPanel
+          product={selectedProduct}
+          onMarkReviewed={onMarkReviewed}
+        />
       </div>
     </section>
   );

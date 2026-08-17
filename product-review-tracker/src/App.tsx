@@ -3,107 +3,100 @@ import ProductWorkspace from "../components/ProductWorkSpace";
 import ProductLoadError from "../components/ProductWorkSpace/ProductLoadError";
 import ProductListSkeleton from "../components/ProductWorkSpace/ProductListSkeleton";
 import ReviewSummary from "../components/ReviewSummary";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import type { Product, ProductFilter, ProductsResponse } from "./types/product";
-
+import {
+  initialProductState,
+  productReducer,
+} from "../components/ProductWorkSpace/reducer";
  
 
 function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null,
   );
-  const [products, setProducts] = useState<Product[]>([]);
 
-  const [filter, setFilter] = useState<ProductFilter>("all");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [requestVersion, setRequestVersion] = useState(0);
+  const [state, dispatch] = useReducer(productReducer, initialProductState);
 
   const visibleProducts =
-    filter === "all"
-      ? products
-      : products.filter((product) => product.reviewStatus === filter);
+    state.filter === "all"
+      ? state.products
+      : state.products.filter(
+          (product) => product.reviewStatus === state.filter,
+        );
 
-  const reviewedCount = products.filter(
+  const reviewedCount = state.products.filter(
     (product) => product.reviewStatus === "reviewed",
   ).length;
 
-  const selectedProduct = products.find(
-    (product) => product.id === selectedProductId,
+  const selectedProduct = state.products.find(
+    (product) => product.id === state.selectedProductId,
   );
 
-  useEffect(() => {
-    const controller = new AbortController();
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function loadProducts() {
-      setIsLoading(true);
-      setError(null);
+  async function loadProducts() {
+    dispatch({ type: "productsLoadStarted" });
 
-      try {
-        const response = await fetch("https://dummyjson.com/products?limit=3", {
-          signal: controller.signal,
-        });
+    try {
+      const response = await fetch("https://dummyjson.com/products?limit=3", {
+        signal: controller.signal,
+      });
 
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
 
-        const data: ProductsResponse = await response.json();
-        const nextProducts: Product[] = data.products.map((apiProduct) => ({
-          id: String(apiProduct.id),
-          name: apiProduct.title,
-          description: apiProduct.description,
-          price: apiProduct.price,
-          imageUrl: apiProduct.thumbnail,
-          reviewStatus: "new",
-        }));
+      const data: ProductsResponse = await response.json();
+      const products: Product[] = data.products.map((apiProduct) => ({
+        id: String(apiProduct.id),
+        name: apiProduct.title,
+        description: apiProduct.description,
+        price: apiProduct.price,
+        imageUrl: apiProduct.thumbnail,
+        reviewStatus: "new",
+      }));
 
-        setProducts(nextProducts);
-        setSelectedProductId((currentId) =>
-          nextProducts.some((product) => product.id === currentId)
-            ? currentId
-            : (nextProducts[0]?.id ?? null),
-        );
-      } catch (caughtError) {
-        if (
-          caughtError instanceof DOMException &&
-          caughtError.name === "AbortError"
-        ) {
-          return;
-        }
+      dispatch({ type: "productsLoaded", products });
+    } catch (caughtError) {
+      if (
+        caughtError instanceof DOMException &&
+        caughtError.name === "AbortError"
+      ) {
+        return;
+      }
 
-        setError(
+      dispatch({
+        type: "productsLoadFailed",
+        message:
           caughtError instanceof Error
             ? caughtError.message
             : "Unable to load products.",
-        );
-        setProducts([]);
-        setSelectedProductId(null);
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
+      });
     }
-
-    void loadProducts();
-
-    return () => controller.abort();
-  }, [requestVersion]);
-
-
-
-  function handleSelectProduct(productId: string) {
-    setSelectedProductId(productId);
   }
 
-  function handleFilterChange(nextFilter: ProductFilter) {
-    setFilter(nextFilter);
-  }
+  void loadProducts();
 
-  function handleRetry() {
-    setRequestVersion((version) => version + 1);
-  }
+  return () => controller.abort();
+}, [state.requestVersion]);
+
+function handleSelectProduct(productId: string) {
+  dispatch({ type: "productSelected", productId });
+}
+
+function handleFilterChange(filter: ProductFilter) {
+  dispatch({ type: "filterChanged", filter });
+}
+
+function handleMarkReviewed(productId: string) {
+  dispatch({ type: "productReviewed", productId });
+}
+
+function handleRetry() {
+  dispatch({ type: "productsReloadRequested" });
+}
 
   return (
     <main className='min-h-screen bg-slate-50 p-6 text-slate-950'>
@@ -115,34 +108,34 @@ function App() {
             </h1>
             <p className='text-lg text-slate-600'>Review products by status</p>
           </div>
-
           <ReviewSummary
             reviewedCount={reviewedCount}
-            totalCount={products.length}
+            totalCount={state.products.length}
           />
         </header>
 
         <div className='mt-6'>
-          {isLoading ? <ProductListSkeleton /> : null}
+          {state.isLoading ? <ProductListSkeleton /> : null}
 
-          {!isLoading && error ? (
-            <ProductLoadError message={error} onRetry={handleRetry} />
+          {!state.isLoading && state.error ? (
+            <ProductLoadError message={state.error} onRetry={handleRetry} />
           ) : null}
 
-          {!isLoading && !error && products.length === 0 ? (
+          {!state.isLoading && !state.error && state.products.length === 0 ? (
             <p className='rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600'>
               No products found.
             </p>
           ) : null}
 
-          {!isLoading && !error && products.length > 0 ? (
+          {!state.isLoading && !state.error && state.products.length > 0 ? (
             <ProductWorkspace
               visibleProducts={visibleProducts}
-              selectedProductId={selectedProductId}
+              selectedProductId={state.selectedProductId}
               selectedProduct={selectedProduct}
-              filter={filter}
+              filter={state.filter}
               onFilterChange={handleFilterChange}
               onSelectProduct={handleSelectProduct}
+              onMarkReviewed={handleMarkReviewed}
             />
           ) : null}
         </div>
